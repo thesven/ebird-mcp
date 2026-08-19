@@ -1,0 +1,10 @@
+name = "ebird-mcp"
+main = "dist/index.js"
+compatibility_date = "2025-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+# production-specific overrides can be placed here
+
+[observability]
+enabled = true
