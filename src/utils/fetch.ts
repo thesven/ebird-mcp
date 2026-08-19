@@ -24,6 +24,7 @@ export class EbirdRequestError extends Error {
 export interface FetchOptions {
   timeoutMs?: number;
   headers?: HeadersInit;
+  responseType?: 'json' | 'text';
 }
 
 async function readResponseBodyText(resp: Response): Promise<string | undefined> {
@@ -35,7 +36,11 @@ async function readResponseBodyText(resp: Response): Promise<string | undefined>
   }
 }
 
-export async function requestJson(url: string, init: RequestInit = {}, options: FetchOptions = {}): Promise<unknown> {
+export async function requestJson(
+  url: string,
+  init: RequestInit = {},
+  options: FetchOptions = {},
+): Promise<unknown> {
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? 15000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -45,7 +50,7 @@ export async function requestJson(url: string, init: RequestInit = {}, options: 
       signal: controller.signal,
       ...init,
       headers: {
-        Accept: 'application/json',
+        Accept: options.responseType === 'text' ? 'text/plain' : 'application/json',
         ...options.headers,
         ...init.headers,
       },
@@ -61,17 +66,22 @@ export async function requestJson(url: string, init: RequestInit = {}, options: 
       });
     }
 
-    const payload = await resp.json().catch(async () => {
-      const body = await readResponseBodyText(resp);
+    const bodyText = await resp.text();
+
+    if (options.responseType === 'text') {
+      return bodyText;
+    }
+
+    try {
+      return JSON.parse(bodyText);
+    } catch {
       throw new EbirdRequestError('Invalid JSON response from eBird API', {
         status: resp.status,
         statusText: resp.statusText,
         endpoint: url,
-        body: body ?? undefined,
+        body: bodyText || undefined,
       });
-    });
-
-    return payload;
+    }
   } finally {
     clearTimeout(timeout);
   }

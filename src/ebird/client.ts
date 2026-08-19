@@ -30,6 +30,16 @@ function isValidApiKey(apiKey?: string): apiKey is string {
   return typeof apiKey === 'string' && apiKey.trim().length > 0;
 }
 
+function applyDefaults<T extends Record<string, unknown>>(
+  def: EndpointDef,
+  args: T,
+): Record<string, unknown> {
+  return {
+    ...def.queryDefaults,
+    ...args,
+  };
+}
+
 export function buildEndpointUrl(
   name: string,
   args: Record<string, unknown>,
@@ -46,14 +56,15 @@ export function buildEndpointUrl(
   });
 
   const parsed = validateSchema ? (schema.parse(args) as Record<string, unknown>) : args;
+  const normalized = applyDefaults(def, parsed);
 
-  if (def.requiresApiKey && !isValidApiKey(parsed.apiKey as string | undefined)) {
+  if (def.requiresApiKey && !isValidApiKey(normalized.apiKey as string | undefined)) {
     throw new Error(`apiKey is required for ${name}`);
   }
 
   let path = def.pathTemplate;
   for (const param of def.pathParams) {
-    const value = parsed[param];
+    const value = normalized[param];
     if (value === undefined) {
       throw new Error(`Missing required path param: ${param}`);
     }
@@ -62,7 +73,7 @@ export function buildEndpointUrl(
 
   const endpointUrl = new URL(`${EBF}${path}`);
 
-  for (const [rawKey, rawValue] of Object.entries(parsed)) {
+  for (const [rawKey, rawValue] of Object.entries(normalized)) {
     if (rawKey === 'apiKey') continue;
     if (def.pathParams.includes(rawKey)) continue;
     if (!(rawKey in def.querySchema)) continue;
@@ -92,18 +103,24 @@ export async function callEbirdEndpoint(name: string, args: Record<string, unkno
     })
     .parse(args) as Record<string, unknown>;
 
-  const { url, endpoint } = buildEndpointUrl(name, parsed, false);
+  const normalized = applyDefaults(def, parsed);
+  const { url, endpoint } = buildEndpointUrl(name, normalized, false);
+
   const headers: HeadersInit = {
     'User-Agent': 'ebird-mcp/1.0',
   };
   if (def.requiresApiKey) {
-    headers['x-ebirdapitoken'] = String(parsed.apiKey);
+    headers['x-ebirdapitoken'] = String(normalized.apiKey);
   }
+
+  const wantsText = normalized.fmt === 'csv';
 
   try {
     return await requestJson(url, {
       method: 'GET',
       headers,
+    }, {
+      responseType: wantsText ? 'text' : 'json',
     });
   } catch (error) {
     if (error instanceof EbirdRequestError) {

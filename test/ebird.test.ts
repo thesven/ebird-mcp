@@ -17,6 +17,20 @@ function makeMockFetch() {
   return { fn, calls };
 }
 
+function makeMockFetchText(body = 'a,b\n1,2') {
+  const calls: Array<{ url: string; init: RequestInit }> = [];
+  const fn = vi.fn(async (url: string, init: RequestInit = {}) => {
+    calls.push({ url, init });
+    return new Response(body, {
+      status: 200,
+      headers: { 'content-type': 'text/csv' },
+    });
+  });
+  // @ts-expect-error - global is not strictly typed in this environment
+  global.fetch = fn;
+  return { fn, calls };
+}
+
 describe('client', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -33,6 +47,18 @@ describe('client', () => {
     expect(authTools.length + nonAuthTools.length).toBe(25);
     expect(authTools.length).toBe(22); // currently 22 tools require api key
     expect(nonAuthTools.length).toBe(3);
+  });
+
+  it('buildEndpointUrl applies defaults and encodes queries', () => {
+    const built = buildEndpointUrl('data_obs_recent', {
+      apiKey: 'abc',
+      regionCode: 'US-NY',
+    });
+
+    const builtUrl = new URL(built.url);
+    expect(builtUrl.pathname).toBe('/v2/data/obs/US-NY/recent');
+    expect(builtUrl.searchParams.get('back')).toBe('30');
+    expect(builtUrl.searchParams.get('maxResults')).toBe('10');
   });
 
   it('constructs encoded URL and forwards known query params', async () => {
@@ -61,6 +87,18 @@ describe('client', () => {
       'User-Agent': 'ebird-mcp/1.0',
     });
     expect(url.searchParams.has('apiKey')).toBe(false);
+  });
+
+  it('supports csv response mode when requested', async () => {
+    const { fn } = makeMockFetchText('id,name\n1,Test');
+
+    const result = await callEbirdEndpoint('ref_taxonomy', {
+      fmt: 'csv',
+    });
+
+    expect(fn).toHaveBeenCalledOnce();
+    expect(typeof result).toBe('string');
+    expect(result).toContain('id,name');
   });
 
   it('requires apiKey for authenticated calls', async () => {
