@@ -9,6 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "mcp:stdio": "node scripts/ebird-mcp-stdio.mjs",
     "format": "echo 'no formatter configured'"
   },
   "dependencies": {
