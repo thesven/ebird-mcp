@@ -1,15 +1,15 @@
 # ebird-mcp
 
-Cloudflare Workers hosted MCP server for the [eBird v2 API](https://documenter.getpostman.com/view/664302/S1ENwy59).
+Local-first MCP server for the [eBird v2 API](https://documenter.getpostman.com/view/664302/S1ENwy59).
 
-**Status**: scaffold and full implementation structure in place, ready for validation and deployment.
+**Status**: scaffold and full implementation structure in place, validated locally.
 
 ## Scope
 
 - Implements MCP tools for eBird's documented v2 endpoints.
 - Uses **per-request API key forwarding** for every tool that requires authentication.
-- Hosted as a **Cloudflare Worker** with a `/mcp` endpoint.
-- Deployable via GitHub Actions on Cloudflare free tier.
+- Runs locally and exposes `/mcp` plus `/health`.
+- Designed for local use first; Cloudflare deployment has been deprioritized.
 
 ## Endpoints implemented (25 tools)
 
@@ -78,24 +78,17 @@ npm run typecheck
 npm run lint
 ```
 
-## Cloudflare deployment
+## Local usage
 
-1. Ensure GitHub secrets are configured:
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ACCOUNT_ID`
-2. Push to `main`.
-3. GitHub Actions workflow `.github/workflows/deploy.yml` runs `wrangler deploy`.
-
-Worker entry endpoint:
-- `GET /health` for basic health check
+- `GET /health` for a basic health check
 - `POST /mcp` MCP streamable JSON transport
 - `OPTIONS /mcp` CORS preflight
 
-## Deployment notes (Free plan)
+## Local deployment notes
 
-- No durable KV/Durable Object usage in core path (free tier friendly).
 - No external storage requirements.
-- Stateless MCP transport to keep worker memory usage low.
+- Stateless MCP transport keeps the local server lightweight.
+- Cloudflare-specific deployment files remain in the repo for now, but the intended path is local use.
 
 ## Security notes
 

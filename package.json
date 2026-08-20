@@ -2,7 +2,7 @@
   "name": "ebird-mcp",
   "private": true,
   "version": "1.0.0",
-  "description": "Cloudflare-hosted MCP server for eBird API",
+  "description": "Local-first MCP server for eBird API",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
