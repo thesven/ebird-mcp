@@ -5,6 +5,19 @@ All notable changes to `ebird-mcp` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-11-11
+
+### Added
+- add automated semver release pipeline, packaging metadata, and valid project docs (`994b70d`)
+- add AI helper tools, MCP resources, prompts, env auth, and CLI executable (`7aaa669`)
+- add local stdio MCP launcher (`f51785e`)
+- apply endpoint defaults and support csv responses (`ae6bbb0`)
+- scaffold and implement Cloudflare-hosted eBird MCP server (`7276b89`)
+
+### Documentation & Maintenance
+- update dependencies to latest versions and configure tooling (`e53744f`)
+- pivot to local-first MCP (`046646f`)
+
 ## [1.1.0] - 2026-11-11
 
 ### Added

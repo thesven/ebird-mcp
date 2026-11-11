@@ -1,7 +1,7 @@
 # ebird-mcp
 
 [![CI](https://github.com/thesven/ebird-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thesven/ebird-mcp/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](package.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D20.9.0-orange.svg)](<>)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05-purple.svg)](https://modelcontextprotocol.io)
