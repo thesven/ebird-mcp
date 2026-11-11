@@ -4,8 +4,12 @@ import { createServer } from '../src/mcp/server.js';
 import { setTaxonomyCacheForTesting } from '../src/ebird/helpers.js';
 
 describe('MCP server and worker handler', () => {
+  const originalEnv = { ...process.env };
+
   beforeEach(() => {
     vi.restoreAllMocks();
+    delete process.env.EBIRD_API_KEY;
+    delete process.env.EBIRD_API_TOKEN;
     setTaxonomyCacheForTesting([
       {
         speciesCode: 'snoowl1',
@@ -19,10 +23,16 @@ describe('MCP server and worker handler', () => {
   afterEach(() => {
     setTaxonomyCacheForTesting(null);
     vi.restoreAllMocks();
+    process.env = { ...originalEnv };
   });
 
   it('creates an McpServer instance with registered tools, resources, and prompts', () => {
     const server = createServer();
+    expect(server).toBeDefined();
+  });
+
+  it('supports custom server name and version options', () => {
+    const server = createServer({ name: 'custom-ebird', version: '2.5.0' });
     expect(server).toBeDefined();
   });
 
@@ -146,6 +156,156 @@ describe('MCP server and worker handler', () => {
     expect(parsed[0].speciesCode).toBe('snoowl1');
   });
 
+  it('executes ebird_search_hotspots tool through MCP protocol', async () => {
+    global.fetch = vi.fn(async () => {
+      return new Response(
+        JSON.stringify([
+          {
+            locId: 'L12345',
+            locName: 'Central Park',
+            lat: 40.785,
+            lng: -73.968,
+            numSpeciesAllTime: 290,
+          },
+        ]),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 31,
+      method: 'tools/call',
+      params: {
+        name: 'ebird_search_hotspots',
+        arguments: {
+          regionCode: 'US-NY',
+          query: 'Central',
+          apiKey: 'test-api-key',
+        },
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { content: Array<{ type: string; text: string }> };
+    };
+    const parsed = JSON.parse(data.result.content[0].text);
+    expect(parsed[0].locName).toBe('Central Park');
+  });
+
+  it('executes ebird_lookup_region tool through MCP protocol', async () => {
+    global.fetch = vi.fn(async () => {
+      return new Response(
+        JSON.stringify([
+          { code: 'US-NY-061', name: 'New York County' },
+          { code: 'US-NY-047', name: 'Kings County' },
+        ]),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 32,
+      method: 'tools/call',
+      params: {
+        name: 'ebird_lookup_region',
+        arguments: {
+          regionType: 'subnational2',
+          parentRegionCode: 'US-NY',
+          query: 'Kings',
+          apiKey: 'test-api-key',
+        },
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { content: Array<{ type: string; text: string }> };
+    };
+    const parsed = JSON.parse(data.result.content[0].text);
+    expect(parsed.length).toBe(1);
+    expect(parsed[0].code).toBe('US-NY-047');
+  });
+
+  it('executes core ebird_data_obs_recent tool through MCP protocol with apiKey', async () => {
+    global.fetch = vi.fn(async () => {
+      return new Response(
+        JSON.stringify([
+          {
+            speciesCode: 'cangoo',
+            comName: 'Canada Goose',
+            sciName: 'Branta canadensis',
+            locName: 'Jamaica Bay Wildlife Refuge',
+            howMany: 42,
+          },
+        ]),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 33,
+      method: 'tools/call',
+      params: {
+        name: 'ebird_data_obs_recent',
+        arguments: {
+          regionCode: 'US-NY',
+          apiKey: 'test-api-key',
+        },
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { content: Array<{ type: string; text: string }> };
+    };
+    const parsed = JSON.parse(data.result.content[0].text);
+    expect(parsed[0].speciesCode).toBe('cangoo');
+  });
+
+  it('returns isError: true when protected tool is called without an API key', async () => {
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 34,
+      method: 'tools/call',
+      params: {
+        name: 'ebird_data_obs_recent',
+        arguments: {
+          regionCode: 'US-NY',
+        },
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { isError: boolean; content: Array<{ type: string; text: string }> };
+    };
+    expect(data.result.isError).toBe(true);
+    expect(data.result.content[0].text).toContain('eBird API key is required');
+  });
+
+  it('returns isError: true when helper tool encounters invalid arguments', async () => {
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 35,
+      method: 'tools/call',
+      params: {
+        name: 'ebird_search_hotspots',
+        arguments: {},
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { isError: boolean; content: Array<{ type: string; text: string }> };
+    };
+    expect(data.result.isError).toBe(true);
+    expect(data.result.content[0].text).toContain('Either');
+  });
+
   it('lists registered MCP resources', async () => {
     const response = await postMcp({
       jsonrpc: '2.0',
@@ -185,6 +345,84 @@ describe('MCP server and worker handler', () => {
     expect(parsed.toolsCount).toBe(28);
   });
 
+  it('reads ebird://taxonomy/versions resource', async () => {
+    global.fetch = vi.fn(async () => {
+      return new Response(JSON.stringify([{ version: '2024', releaseDate: '2024-10-25' }]), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 51,
+      method: 'resources/read',
+      params: {
+        uri: 'ebird://taxonomy/versions',
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { contents: Array<{ uri: string; text: string; mimeType: string }> };
+    };
+    expect(data.result.contents[0].uri).toBe('ebird://taxonomy/versions');
+    const parsed = JSON.parse(data.result.contents[0].text);
+    expect(parsed[0].version).toBe('2024');
+  });
+
+  it('reads ebird://locales resource', async () => {
+    global.fetch = vi.fn(async () => {
+      return new Response(JSON.stringify([{ code: 'en', name: 'English' }]), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    process.env.EBIRD_API_KEY = 'test-locale-token';
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 52,
+      method: 'resources/read',
+      params: {
+        uri: 'ebird://locales',
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { contents: Array<{ uri: string; text: string; mimeType: string }> };
+    };
+    expect(data.result.contents[0].uri).toBe('ebird://locales');
+    const parsed = JSON.parse(data.result.contents[0].text);
+    expect(parsed[0].code).toBe('en');
+  });
+
+  it('handles resource read failure gracefully', async () => {
+    global.fetch = vi.fn(async () => {
+      return new Response('Internal error', {
+        status: 500,
+        statusText: 'Internal Server Error',
+      });
+    });
+
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 53,
+      method: 'resources/read',
+      params: {
+        uri: 'ebird://locales',
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { contents: Array<{ uri: string; text: string }> };
+    };
+    const parsed = JSON.parse(data.result.contents[0].text);
+    expect(parsed.error).toBeDefined();
+  });
+
   it('lists registered MCP prompts', async () => {
     const response = await postMcp({
       jsonrpc: '2.0',
@@ -204,7 +442,7 @@ describe('MCP server and worker handler', () => {
     expect(promptNames).toContain('species-tracker');
   });
 
-  it('gets a prompt template by name', async () => {
+  it('gets a find-rare-birds prompt template', async () => {
     const response = await postMcp({
       jsonrpc: '2.0',
       id: 7,
@@ -223,5 +461,49 @@ describe('MCP server and worker handler', () => {
     };
     expect(data.result.messages[0].content.text).toContain('US-NY');
     expect(data.result.messages[0].content.text).toContain('ebird_data_obs_recent_notable');
+  });
+
+  it('gets a plan-birding-trip prompt template', async () => {
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 71,
+      method: 'prompts/get',
+      params: {
+        name: 'plan-birding-trip',
+        arguments: {
+          location: 'Central Park, NY',
+          duration: 'weekend',
+        },
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { messages: Array<{ role: string; content: { text: string } }> };
+    };
+    expect(data.result.messages[0].content.text).toContain('Central Park, NY');
+    expect(data.result.messages[0].content.text).toContain('weekend');
+  });
+
+  it('gets a species-tracker prompt template', async () => {
+    const response = await postMcp({
+      jsonrpc: '2.0',
+      id: 72,
+      method: 'prompts/get',
+      params: {
+        name: 'species-tracker',
+        arguments: {
+          species: 'Snowy Owl',
+          regionCode: 'US-MA',
+        },
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      result: { messages: Array<{ role: string; content: { text: string } }> };
+    };
+    expect(data.result.messages[0].content.text).toContain('Snowy Owl');
+    expect(data.result.messages[0].content.text).toContain('US-MA');
   });
 });

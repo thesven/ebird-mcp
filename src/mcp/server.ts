@@ -11,11 +11,16 @@ import {
   LookupRegionsOptions,
 } from '../ebird/helpers.js';
 
-export function createServer(): McpServer {
+export interface ServerOptions {
+  name?: string;
+  version?: string;
+}
+
+export function createServer(options: ServerOptions = {}): McpServer {
   const server = new McpServer(
     {
-      name: 'ebird-mcp',
-      version: '1.1.0',
+      name: options.name || 'ebird-mcp',
+      version: options.version || '1.2.0',
     },
     {
       capabilities: {

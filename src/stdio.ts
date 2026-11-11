@@ -4,27 +4,44 @@ import path from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createServer } from './mcp/server.js';
 
-function tryLoadKeyFromFile(filePath: string): string | undefined {
+export function tryLoadKeyFromFile(filePath: string): string | undefined {
   try {
     if (!fs.existsSync(filePath)) return undefined;
     const content = fs.readFileSync(filePath, 'utf8');
-    const match = content.match(/^\s*(?:export\s+)?EBIRD_API_KEY\s*=\s*(["']?)([^"'\r\n]+)\1\s*$/m);
+    const match = content.match(
+      /^\s*(?:export\s+)?(?:EBIRD_API_KEY|EBIRD_API_TOKEN)\s*=\s*(["']?)([^"'\r\n]+)\1\s*$/m,
+    );
     return match ? match[2].trim() : undefined;
   } catch {
     return undefined;
   }
 }
 
-function initializeApiKey(): void {
+export interface InitApiKeyOptions {
+  cwd?: string;
+  homedir?: string;
+  silent?: boolean;
+}
+
+export function initializeApiKey(options: InitApiKeyOptions = {}): string | undefined {
   if (process.env.EBIRD_API_KEY && process.env.EBIRD_API_KEY.trim()) {
-    return;
+    return process.env.EBIRD_API_KEY.trim();
   }
 
-  const homedir = os.homedir();
+  if (process.env.EBIRD_API_TOKEN && process.env.EBIRD_API_TOKEN.trim()) {
+    process.env.EBIRD_API_KEY = process.env.EBIRD_API_TOKEN.trim();
+    return process.env.EBIRD_API_KEY;
+  }
+
+  const homedir = options.homedir ?? os.homedir();
+  const cwd = options.cwd ?? process.cwd();
+
   const candidateFiles = [
-    path.join(process.cwd(), '.env'),
+    path.join(cwd, '.env'),
     path.join(homedir, '.zshrc'),
     path.join(homedir, '.bashrc'),
+    path.join(homedir, '.bash_profile'),
+    path.join(homedir, '.profile'),
     path.join(homedir, '.config', 'ebird', 'key'),
   ];
 
@@ -32,17 +49,23 @@ function initializeApiKey(): void {
     const key = tryLoadKeyFromFile(candidate);
     if (key) {
       process.env.EBIRD_API_KEY = key;
-      process.stderr.write(`[ebird-mcp] Loaded EBIRD_API_KEY from ${candidate}\n`);
-      return;
+      if (!options.silent) {
+        process.stderr.write(`[ebird-mcp] Loaded EBIRD_API_KEY from ${candidate}\n`);
+      }
+      return key;
     }
   }
 
-  process.stderr.write(
-    '[ebird-mcp] Notice: EBIRD_API_KEY is not set. Tools requiring authentication will require an apiKey argument. Get a free key at https://ebird.org/api/keygen\n',
-  );
+  if (!options.silent) {
+    process.stderr.write(
+      '[ebird-mcp] Notice: EBIRD_API_KEY is not set. Tools requiring authentication will require an apiKey argument. Get a free key at https://ebird.org/api/keygen\n',
+    );
+  }
+
+  return undefined;
 }
 
-async function main(): Promise<void> {
+export async function runStdioServer(): Promise<void> {
   initializeApiKey();
 
   const server = createServer();
@@ -61,8 +84,16 @@ async function main(): Promise<void> {
   await server.connect(transport);
 }
 
-void main().catch((error) => {
-  const message = error instanceof Error ? error.stack || error.message : String(error);
-  process.stderr.write(`[ebird-mcp] Fatal error: ${message}\n`);
-  process.exit(1);
-});
+// Automatically start if executed as entrypoint
+const isDirectEntry =
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1]?.endsWith('bin/ebird-mcp.js') ||
+  process.argv[1]?.endsWith('ebird-mcp-stdio.mjs');
+
+if (isDirectEntry) {
+  runStdioServer().catch((error) => {
+    const message = error instanceof Error ? error.stack || error.message : String(error);
+    process.stderr.write(`[ebird-mcp] Fatal error: ${message}\n`);
+    process.exit(1);
+  });
+}

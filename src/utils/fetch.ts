@@ -27,6 +27,20 @@ export interface FetchOptions {
   responseType?: 'json' | 'text';
 }
 
+export function sanitizeUrl(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl);
+    for (const key of ['key', 'token', 'apiKey', 'api_key', 'ebird_api_key', 'ebird_api_token']) {
+      if (parsed.searchParams.has(key)) {
+        parsed.searchParams.set(key, '[REDACTED]');
+      }
+    }
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
 async function readResponseBodyText(resp: Response): Promise<string | undefined> {
   try {
     const text = await resp.text();
@@ -63,7 +77,7 @@ export async function requestJson(
         {
           status: resp.status,
           statusText: resp.statusText,
-          endpoint: url,
+          endpoint: sanitizeUrl(url),
           body,
         },
       );
@@ -81,7 +95,7 @@ export async function requestJson(
       throw new EbirdRequestError('Invalid JSON response from eBird API', {
         status: resp.status,
         statusText: resp.statusText,
-        endpoint: url,
+        endpoint: sanitizeUrl(url),
         body: bodyText || undefined,
       });
     }

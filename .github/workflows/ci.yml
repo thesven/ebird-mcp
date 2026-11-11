@@ -8,14 +8,26 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['20.x', '22.x', '24.x']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test
+      - name: Install dependencies
+        run: npm ci
+      - name: Code style check
+        run: npm run format:check
+      - name: Lint check
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Test suite with coverage (>90%)
+        run: npm run test:coverage
+      - name: Build TypeScript distribution
+        run: npm run build
+      - name: Validate npm packaging tarball
+        run: npm pack --dry-run

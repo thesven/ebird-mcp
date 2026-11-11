@@ -1,0 +1,50 @@
+name: Bug Report
+description: Report an issue, unexpected behavior, or error in ebird-mcp
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please ensure you have checked the [README](https://github.com/thesven/ebird-mcp#readme) and existing open issues first.
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: What MCP client and Node.js version are you running?
+      placeholder: 'e.g. Claude Desktop 0.8.0, Node.js v22.14.0, macOS Sequoia'
+    validations:
+      required: true
+  - type: input
+    id: tool-or-endpoint
+    attributes:
+      label: Affected Tool or Endpoint
+      description: Which tool, resource, or prompt failed?
+      placeholder: 'e.g. ebird_data_obs_recent, ebird_search_hotspots, or stdio transport'
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the Problem
+      description: Clear and concise description of what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps or client configuration to reproduce the behavior.
+      placeholder: |
+        1. Start ebird-mcp via stdio
+        2. Call tool with arguments: ...
+        3. See error response: ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Error Logs
+      description: Paste any error messages or stack traces (redact your API tokens before submitting!).
+      render: shell
+    validations:
+      required: false

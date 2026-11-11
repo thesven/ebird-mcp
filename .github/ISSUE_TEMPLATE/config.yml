@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Cornell Lab eBird API Documentation
+    url: https://documenter.getpostman.com/view/664302/S1ENwy59
+    about: Official API documentation and reference by Cornell Lab of Ornithology
+  - name: Model Context Protocol Documentation
+    url: https://modelcontextprotocol.io
+    about: Official Model Context Protocol specifications and architecture

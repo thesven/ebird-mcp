@@ -3,6 +3,7 @@ import {
   searchSpecies,
   searchHotspots,
   lookupRegions,
+  getTaxonomy,
   setTaxonomyCacheForTesting,
 } from '../src/ebird/helpers.js';
 
@@ -48,6 +49,42 @@ describe('eBird helpers', () => {
     vi.restoreAllMocks();
   });
 
+  describe('getTaxonomy', () => {
+    it('fetches taxonomy from remote endpoint when cache is null', async () => {
+      setTaxonomyCacheForTesting(null);
+      global.fetch = vi.fn(async () => {
+        return new Response(
+          JSON.stringify([
+            {
+              speciesCode: 'osprey',
+              comName: 'Osprey',
+              sciName: 'Pandion haliaetus',
+              category: 'species',
+            },
+          ]),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      });
+
+      const taxa = await getTaxonomy();
+      expect(taxa.length).toBe(1);
+      expect(taxa[0].speciesCode).toBe('osprey');
+    });
+
+    it('returns empty array if remote returns non-array', async () => {
+      setTaxonomyCacheForTesting(null);
+      global.fetch = vi.fn(async () => {
+        return new Response(JSON.stringify({ error: 'not found' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      });
+
+      const taxa = await getTaxonomy();
+      expect(taxa).toEqual([]);
+    });
+  });
+
   describe('searchSpecies', () => {
     it('returns empty array for empty query', async () => {
       const res = await searchSpecies('');
@@ -61,8 +98,28 @@ describe('eBird helpers', () => {
       expect(res[0].comName).toBe('Snowy Owl');
     });
 
-    it('finds species by scientific name', async () => {
-      const res = await searchSpecies('Bubo scandiacus');
+    it('finds species by prefix of common name', async () => {
+      const res = await searchSpecies('Snow');
+      expect(res.length).toBe(1);
+      expect(res[0].speciesCode).toBe('snoowl1');
+    });
+
+    it('finds species by word inside common name', async () => {
+      const res = await searchSpecies('Eagle');
+      expect(res.length).toBe(1);
+      expect(res[0].comName).toBe('Bald Eagle');
+    });
+
+    it('finds species by scientific name prefix and substring', async () => {
+      const res1 = await searchSpecies('Haliaeetus');
+      expect(res1[0].speciesCode).toBe('baleag');
+
+      const res2 = await searchSpecies('scandiacus');
+      expect(res2[0].speciesCode).toBe('snoowl1');
+    });
+
+    it('finds species by partial species code', async () => {
+      const res = await searchSpecies('owl1');
       expect(res.length).toBe(1);
       expect(res[0].speciesCode).toBe('snoowl1');
     });
@@ -75,6 +132,11 @@ describe('eBird helpers', () => {
       expect(res2[0].comName).toBe('Bald Eagle');
     });
 
+    it('filters by category when specified', async () => {
+      const res = await searchSpecies('Snowy Owl', { category: 'hybrid' });
+      expect(res).toEqual([]);
+    });
+
     it('respects maxResults option', async () => {
       const res = await searchSpecies('a', { maxResults: 1 });
       expect(res.length).toBe(1);
@@ -84,6 +146,18 @@ describe('eBird helpers', () => {
   describe('searchHotspots', () => {
     it('throws when neither regionCode nor coordinates are given', async () => {
       await expect(searchHotspots({})).rejects.toThrow(/Either 'regionCode'/);
+    });
+
+    it('returns empty array if endpoint returns non-array', async () => {
+      global.fetch = vi.fn(async () => {
+        return new Response(JSON.stringify({ error: 'fail' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      });
+
+      const res = await searchHotspots({ regionCode: 'US-NY', apiKey: 'test-key' });
+      expect(res).toEqual([]);
     });
 
     it('searches hotspots by regionCode and filters by query', async () => {
@@ -148,6 +222,22 @@ describe('eBird helpers', () => {
       expect(res.length).toBe(2);
       expect(res[0].code).toBe('US-NY');
       expect(res[1].code).toBe('US-NJ');
+    });
+
+    it('returns empty array if remote returns non-array', async () => {
+      global.fetch = vi.fn(async () => {
+        return new Response(JSON.stringify({ error: 'fail' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      });
+
+      const res = await lookupRegions({
+        regionType: 'country',
+        parentRegionCode: 'world',
+        apiKey: 'test-key',
+      });
+      expect(res).toEqual([]);
     });
   });
 });

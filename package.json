@@ -3,6 +3,7 @@
   "version": "1.2.0",
   "description": "Model Context Protocol (MCP) server for the eBird API v2",
   "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "type": "module",
   "bin": {
     "ebird-mcp": "./bin/ebird-mcp.js"
@@ -18,15 +19,17 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist *.tgz coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "tsc -p tsconfig.json --noEmit",
     "mcp:stdio": "node scripts/ebird-mcp-stdio.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "release:check": "tsx scripts/release.ts",
     "release:apply": "tsx scripts/release.ts --apply",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run clean && npm run build && npm test"
   },
   "repository": {
     "type": "git",
@@ -56,6 +59,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^5.1.0",
     "prettier": "^3.10.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

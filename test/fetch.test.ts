@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { requestJson, EbirdRequestError } from '../src/utils/fetch.js';
+import { requestJson, EbirdRequestError, sanitizeUrl } from '../src/utils/fetch.js';
 
 describe('requestJson utility', () => {
   beforeEach(() => {
@@ -62,5 +62,27 @@ describe('requestJson utility', () => {
     await expect(requestJson('https://api.ebird.org/v2/ref/taxonomy/ebird')).rejects.toThrow(
       'Invalid JSON response from eBird API',
     );
+  });
+});
+
+describe('sanitizeUrl utility', () => {
+  it('redacts sensitive query parameters', () => {
+    const raw = 'https://api.ebird.org/v2/data/obs/US/recent?apiKey=secret-key-123&back=7';
+    const sanitized = sanitizeUrl(raw);
+    expect(sanitized).toContain('apiKey=%5BREDACTED%5D');
+    expect(sanitized).toContain('back=7');
+    expect(sanitized).not.toContain('secret-key-123');
+  });
+
+  it('redacts token, key, and ebird_api_key params', () => {
+    const raw = 'https://api.ebird.org/v2/test?token=abc&key=def&ebird_api_key=ghi';
+    const sanitized = sanitizeUrl(raw);
+    expect(sanitized).not.toContain('abc');
+    expect(sanitized).not.toContain('def');
+    expect(sanitized).not.toContain('ghi');
+  });
+
+  it('returns original string if invalid URL', () => {
+    expect(sanitizeUrl('not a url')).toBe('not a url');
   });
 });

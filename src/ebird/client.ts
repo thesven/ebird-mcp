@@ -8,7 +8,8 @@ export interface BuildQueryResult {
   endpoint: string;
 }
 
-const EBF = 'https://api.ebird.org/v2';
+export const EBIRD_API_BASE = 'https://api.ebird.org/v2';
+export const CLIENT_VERSION = '1.2.0';
 
 function toQueryValue(value: unknown): string | undefined {
   if (value === undefined || value === null || value === '') {
@@ -33,11 +34,10 @@ export function resolveApiKey(apiKey?: unknown): string | undefined {
   if (process.env.EBIRD_API_KEY && process.env.EBIRD_API_KEY.trim().length > 0) {
     return process.env.EBIRD_API_KEY.trim();
   }
+  if (process.env.EBIRD_API_TOKEN && process.env.EBIRD_API_TOKEN.trim().length > 0) {
+    return process.env.EBIRD_API_TOKEN.trim();
+  }
   return undefined;
-}
-
-function isValidApiKey(apiKey?: string): apiKey is string {
-  return typeof apiKey === 'string' && apiKey.trim().length > 0;
 }
 
 function applyDefaults<T extends Record<string, unknown>>(
@@ -84,7 +84,7 @@ export function buildEndpointUrl(
     path = path.replace(`{${param}}`, encodeURIComponent(String(value)));
   }
 
-  const endpointUrl = new URL(`${EBF}${path}`);
+  const endpointUrl = new URL(`${EBIRD_API_BASE}${path}`);
 
   for (const [rawKey, rawValue] of Object.entries(normalized)) {
     if (rawKey === 'apiKey') continue;
@@ -134,7 +134,7 @@ export async function callEbirdEndpoint(
   const { url, endpoint } = buildEndpointUrl(name, normalizedWithKey, false);
 
   const headers: HeadersInit = {
-    'User-Agent': 'ebird-mcp/1.0',
+    'User-Agent': `ebird-mcp/${CLIENT_VERSION}`,
   };
   if (def.requiresApiKey && effectiveApiKey) {
     headers['x-ebirdapitoken'] = effectiveApiKey;

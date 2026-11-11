@@ -1,0 +1,30 @@
+name: Feature Request
+description: Propose a new capability, endpoint wrapper, prompt, or enhancement
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to make `ebird-mcp` even better? Tell us about it!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a specific problem or missing eBird capability?
+      placeholder: 'e.g. I want to plan multi-day birding routes by combining regional species checklists with seasonal arrival dates...'
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution or Workflow
+      description: Describe the tool, argument, prompt, or behavior you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you considered.
+    validations:
+      required: false

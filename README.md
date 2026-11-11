@@ -3,6 +3,7 @@
 [![CI](https://github.com/thesven/ebird-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thesven/ebird-mcp/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](package.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)](<>)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D20.9.0-orange.svg)](<>)
 [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05-purple.svg)](https://modelcontextprotocol.io)
 
@@ -53,11 +54,12 @@ flowchart TD
 
 - **Complete API Coverage (25 Core Endpoints + 3 AI Helpers)**: Full implementation of all documented eBird v2 REST services across observations, hotspots, products, and references.
 - **AI Helper Tools**: Built-in fuzzy species search (`ebird_search_species`), hotspot search (`ebird_search_hotspots`), and region code exploration (`ebird_lookup_region`) so models can resolve 6-letter species codes and region identifiers instantly without guessing.
-- **Environment-First Authentication**: Automatically detects and loads `EBIRD_API_KEY` from process environment variables, local `.env` files, or shell profiles (`~/.zshrc`, `~/.bashrc`). LLMs invoke tools naturally without needing the key in tool arguments.
+- **Environment-First Authentication**: Automatically detects and loads `EBIRD_API_KEY` or `EBIRD_API_TOKEN` from process environment variables, local `.env` files, or shell profiles (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile`). LLMs invoke tools naturally without needing the key in tool arguments.
 - **MCP Resources**: Exposes system metadata, taxonomy versions, and supported localized language codes via `ebird://` URI resources.
 - **MCP Prompts**: Pre-configured prompt templates for finding rare birds, planning birding trips, and tracking target species.
 - **Dual Transport**: Supports standard **stdio** for local desktop clients and **Streamable HTTP** for remote/edge deployments (including Cloudflare Workers).
-- **Automated Semver Release Pipeline**: Fully automated releases adhering to Conventional Commits and semantic versioning.
+- **TypeScript First**: Fully typed with bundled declaration maps (`.d.ts`). Can be imported directly as a TypeScript/JavaScript library SDK.
+- **Automated Semver Release Pipeline**: Fully automated releases adhering to Conventional Commits, Keep a Changelog, and semantic versioning.
 
 ---
 
@@ -181,6 +183,37 @@ claude mcp add ebird -- npx -y ebird-mcp
 
 ---
 
+## Programmatic Library Usage (TypeScript / Node.js)
+
+`ebird-mcp` can also be imported as a typed library directly in your own applications:
+
+```typescript
+import { createServer, searchSpecies, searchHotspots, callEbirdEndpoint } from 'ebird-mcp';
+
+// 1. Fast fuzzy search for species and 6-letter eBird code
+const speciesMatches = await searchSpecies('Snowy Owl');
+console.log(speciesMatches[0].speciesCode); // 'snoowl1'
+
+// 2. Discover birding hotspots with keyword filter
+const hotspots = await searchHotspots({
+  regionCode: 'US-NY',
+  query: 'Central Park',
+});
+console.log(hotspots[0].locName); // 'Central Park - The Ramble'
+
+// 3. Call any eBird v2 endpoint with typed arguments
+const recentSightings = await callEbirdEndpoint('data_obs_recent', {
+  regionCode: 'US-NY',
+  back: 7,
+  maxResults: 10,
+});
+
+// 4. Instantiate an McpServer instance programmatically
+const server = createServer({ name: 'custom-ebird-server', version: '1.2.0' });
+```
+
+---
+
 ## Tool Catalog (28 Tools)
 
 ### AI Helper Tools
@@ -255,12 +288,12 @@ claude mcp add ebird -- npx -y ebird-mcp
 
 ## Authentication & Environment Variables
 
-`ebird-mcp` automatically discovers and resolves the `EBIRD_API_KEY` through multiple fallback mechanisms in order:
+`ebird-mcp` automatically discovers and resolves the `EBIRD_API_KEY` or `EBIRD_API_TOKEN` through multiple fallback mechanisms in order:
 
 1. **Explicit tool argument** (`apiKey`) if provided.
-2. **Process environment variable** (`process.env.EBIRD_API_KEY`).
+2. **Process environment variables** (`process.env.EBIRD_API_KEY`, `process.env.EBIRD_API_TOKEN`).
 3. **Local `.env` file** in the working directory.
-4. **Shell configuration files** (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile`).
+4. **Shell configuration files** (`~/.zshrc`, `~/.bashrc`, `~/.bash_profile`, `~/.profile`, `~/.config/ebird/key`).
 
 Tokens are sanitized and never exposed in error responses, stdout logs, or tool returns.
 
@@ -281,11 +314,12 @@ cd ebird-mcp
 # Install dependencies
 npm ci
 
-# Build TypeScript
+# Clean and build TypeScript
+npm run clean
 npm run build
 
-# Run test suite
-npm test
+# Run test suite with coverage report (>90%)
+npm run test:coverage
 
 # Check types and format
 npm run typecheck
@@ -301,13 +335,21 @@ npm run release:check
 
 All new development is performed on dedicated feature/fix branches (`feat/*`, `fix/*`, `perf/*`, `docs/*`) and merged into `main` via Pull Request (see [CONTRIBUTING.md](CONTRIBUTING.md)):
 
-1. **Automated CI Matrix (`.github/workflows/ci.yml`):** Every branch push and Pull Request runs `typecheck`, `build`, `npm test`, and format checks across Node.js `20.x`, `22.x`, and `24.x`.
+1. **Automated CI Matrix (`.github/workflows/ci.yml`):** Every branch push and Pull Request runs `typecheck`, `build`, `npm run test:coverage`, and format checks across Node.js `20.x`, `22.x`, and `24.x`.
 2. **Semantic Release & Publish on `main` (`.github/workflows/release.yml`):** Merging or pushing to `main` evaluates the latest `vX.Y.Z` git tag, Conventional Commits, and PR labels (`semver:major`, `semver:minor`, `semver:patch`, `semver:skip`):
    - `feat!:` / `BREAKING CHANGE:` / `semver:major` → **Major** version bump (`vX+1.0.0`)
    - `feat:` / `semver:minor` → **Minor** version bump (`vX.Y+1.0`)
    - `fix:` / `perf:` / `refactor:` / `semver:patch` → **Patch** version bump (`vX.Y.Z+1`)
    - `docs:` / `chore:` / `ci:` / `test:` / `semver:skip` → **No release** (`none`, skips publish)
    - When a release is triggered, GitHub Actions automatically updates `package.json`, `CHANGELOG.md`, and the `README.md` badge, commits `chore(release): vX.Y.Z [skip ci]`, creates the annotated git tag, publishes the GitHub Release, and publishes the package to npm (when `NPM_TOKEN` is configured).
+
+---
+
+## Community & Security Policies
+
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy](SECURITY.md)
 
 ---
 
