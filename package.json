@@ -1,16 +1,21 @@
 {
   "name": "ebird-mcp",
-  "private": true,
   "version": "1.1.0",
-  "description": "Local-first MCP server for eBird API",
+  "description": "Model Context Protocol (MCP) server for the eBird API v2",
+  "main": "dist/src/index.js",
   "type": "module",
   "bin": {
     "ebird-mcp": "./bin/ebird-mcp.js"
   },
   "files": [
     "bin",
-    "dist/src"
+    "dist/src",
+    "README.md",
+    "LICENSE"
   ],
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -18,8 +23,33 @@
     "lint": "tsc -p tsconfig.json --noEmit",
     "mcp:stdio": "node scripts/ebird-mcp-stdio.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "release:check": "tsx scripts/release.ts",
+    "release:apply": "tsx scripts/release.ts --apply",
+    "prepublishOnly": "npm run build && npm test"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thesven/ebird-mcp.git"
+  },
+  "homepage": "https://github.com/thesven/ebird-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/thesven/ebird-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ebird",
+    "birds",
+    "birding",
+    "ornithology",
+    "taxonomy",
+    "cornell-lab",
+    "hotspots",
+    "observations"
+  ],
+  "author": "Michael Svendsen",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
     "zod": "^4.6.7"
@@ -27,6 +57,7 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "prettier": "^3.10.0",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0",
     "wrangler": "^4.160.0"
