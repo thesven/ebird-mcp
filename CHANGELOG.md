@@ -5,6 +5,20 @@ All notable changes to `ebird-mcp` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-11
+
+### Added
+
+- harden CLI binary entrypoint, HTTP request abort lifecycle, and server metadata (`c137e59`)
+
+### Fixed
+
+- ensure distribution is built before running tests in CI and release workflows (`93ffdff`)
+
+### Documentation & Maintenance
+
+- configure deploy workflow for manual dispatch and format release markdown (`ce041c9`)
+
 ## [1.3.0] - 2026-11-11
 
 ### Added
