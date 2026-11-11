@@ -263,19 +263,19 @@ export function formatReleaseMarkdown(params: {
   const sections: string[] = [];
 
   if (breaking.length > 0) {
-    sections.push(`### Breaking Changes\n${breaking.map(formatItem).join('\n')}`);
+    sections.push(`### Breaking Changes\n\n${breaking.map(formatItem).join('\n')}`);
   }
   if (features.length > 0) {
-    sections.push(`### Added\n${features.map(formatItem).join('\n')}`);
+    sections.push(`### Added\n\n${features.map(formatItem).join('\n')}`);
   }
   if (fixes.length > 0) {
-    sections.push(`### Fixed\n${fixes.map(formatItem).join('\n')}`);
+    sections.push(`### Fixed\n\n${fixes.map(formatItem).join('\n')}`);
   }
   if (perfAndRefactor.length > 0) {
-    sections.push(`### Changed & Improved\n${perfAndRefactor.map(formatItem).join('\n')}`);
+    sections.push(`### Changed & Improved\n\n${perfAndRefactor.map(formatItem).join('\n')}`);
   }
   if (docsAndChore.length > 0) {
-    sections.push(`### Documentation & Maintenance\n${docsAndChore.map(formatItem).join('\n')}`);
+    sections.push(`### Documentation & Maintenance\n\n${docsAndChore.map(formatItem).join('\n')}`);
   }
 
   const bodyContent =

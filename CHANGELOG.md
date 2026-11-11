@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-11-11
 
 ### Added
+
 - add typed library exports, community health templates, multi-node CI, and >90% coverage suite (`d7fed81`)
 
 ## [1.2.0] - 2026-11-11

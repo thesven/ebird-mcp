@@ -1,14 +1,11 @@
 name: Deploy to Cloudflare Workers
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     permissions:
       contents: read
     steps:
