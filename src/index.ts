@@ -54,13 +54,22 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
   const server = createServer();
   await server.connect(transport);
 
+  const abortHandler = () => {
+    transport.close().catch(() => {});
+    server.close().catch(() => {});
+  };
+
+  if (request.signal.aborted) {
+    abortHandler();
+    return withCors(new Response('Client closed request', { status: 499 }));
+  }
+
+  request.signal.addEventListener('abort', abortHandler, { once: true });
+
   try {
     return withCors(await transport.handleRequest(request));
   } finally {
-    request.signal.addEventListener('abort', () => {
-      transport.close().catch(() => {});
-      server.close().catch(() => {});
-    });
+    request.signal.removeEventListener('abort', abortHandler);
     transport.close().catch(() => {});
     server.close().catch(() => {});
   }

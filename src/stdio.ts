@@ -65,7 +65,14 @@ export function initializeApiKey(options: InitApiKeyOptions = {}): string | unde
   return undefined;
 }
 
+let serverRunning = false;
+
 export async function runStdioServer(): Promise<void> {
+  if (serverRunning) {
+    return;
+  }
+  serverRunning = true;
+
   initializeApiKey();
 
   const server = createServer();
@@ -84,11 +91,11 @@ export async function runStdioServer(): Promise<void> {
   await server.connect(transport);
 }
 
-// Automatically start if executed as entrypoint
+// Automatically start if executed directly via node or CLI
 const isDirectEntry =
-  import.meta.url === `file://${process.argv[1]}` ||
-  process.argv[1]?.endsWith('bin/ebird-mcp.js') ||
-  process.argv[1]?.endsWith('ebird-mcp-stdio.mjs');
+  Boolean(process.argv[1] && import.meta.url === `file://${process.argv[1]}`) ||
+  Boolean(process.argv[1] && /(?:^|[/\\])ebird-mcp(?:\.js)?$/.test(process.argv[1])) ||
+  Boolean(process.argv[1] && /(?:^|[/\\])ebird-mcp-stdio\.mjs$/.test(process.argv[1]));
 
 if (isDirectEntry) {
   runStdioServer().catch((error) => {

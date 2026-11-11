@@ -223,7 +223,7 @@ export const ebirdEndpointDefinitions: EndpointDef[] = [
     true,
     ['regionCode'],
     {
-      ...({ regionCode: Q.regionCode() } as const),
+      regionCode: Q.regionCode(),
       back: Q.back(),
       cat: Q.cat(),
       hotspot: Q.hotspot(),
@@ -244,7 +244,7 @@ export const ebirdEndpointDefinitions: EndpointDef[] = [
     true,
     ['regionCode'],
     {
-      ...({ regionCode: Q.regionCode() } as const),
+      regionCode: Q.regionCode(),
       back: Q.back(),
       detail: Q.detail(),
       hotspot: Q.hotspot(),

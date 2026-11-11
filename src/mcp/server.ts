@@ -280,8 +280,8 @@ export function createServer(options: ServerOptions = {}): McpServer {
     async (uri) => {
       const isAuthSet = Boolean(process.env.EBIRD_API_KEY && process.env.EBIRD_API_KEY.trim());
       const info = {
-        name: 'ebird-mcp',
-        version: '1.1.0',
+        name: options.name || 'ebird-mcp',
+        version: options.version || '1.3.0',
         authStatus: {
           apiKeyConfigured: isAuthSet,
           note: isAuthSet

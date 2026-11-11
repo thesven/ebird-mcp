@@ -58,6 +58,20 @@ describe('MCP server and worker handler', () => {
     expect(response.headers.get('access-control-allow-methods')).toContain('POST');
   });
 
+  it('returns 499 when client aborts request before completion', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const response = await worker.fetch(
+      new Request('http://localhost/mcp', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 99, method: 'tools/list' }),
+        signal: controller.signal,
+      }),
+    );
+    expect(response.status).toBe(499);
+  });
+
   it('returns 404 for unknown endpoints', async () => {
     const response = await worker.fetch(new Request('http://localhost/unknown'));
     expect(response.status).toBe(404);

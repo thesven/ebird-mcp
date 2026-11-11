@@ -1,4 +1,4 @@
-import { callEbirdEndpoint } from './client.js';
+import { callEbirdEndpoint, EBIRD_API_BASE } from './client.js';
 import { requestJson } from '../utils/fetch.js';
 
 export interface TaxonRecord {
@@ -32,10 +32,9 @@ export async function getTaxonomy(forceRefresh = false): Promise<TaxonRecord[]> 
 
   taxonomyFetchPromise = (async () => {
     try {
-      const data = (await requestJson(
-        'https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json&cat=species',
-        { method: 'GET' },
-      )) as TaxonRecord[];
+      const data = (await requestJson(`${EBIRD_API_BASE}/ref/taxonomy/ebird?fmt=json&cat=species`, {
+        method: 'GET',
+      })) as TaxonRecord[];
 
       if (Array.isArray(data)) {
         taxonomyCache = data;

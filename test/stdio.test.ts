@@ -109,4 +109,52 @@ describe('stdio environment and dotfile key loader', () => {
     await runStdioServer();
     expect(connectCalled).toBe(true);
   });
+
+  it('runs bin/ebird-mcp.js CLI executable and responds to initialize over stdio', async () => {
+    const { spawn } = await import('node:child_process');
+    const binPath = path.resolve(__dirname, '../bin/ebird-mcp.js');
+    const child = spawn(process.execPath, [binPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, EBIRD_API_KEY: 'test-token' },
+    });
+
+    const initMsg =
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'cli-test', version: '1.0' },
+        },
+      }) + '\n';
+
+    let stdoutData = '';
+    child.stdout.on('data', (chunk) => {
+      stdoutData += chunk.toString();
+    });
+
+    child.stdin.write(initMsg);
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        child.kill();
+        reject(new Error(`Timed out waiting for CLI response. Got: ${stdoutData}`));
+      }, 3000);
+
+      const interval = setInterval(() => {
+        if (stdoutData.includes('"result"')) {
+          clearTimeout(timeout);
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+    });
+
+    child.kill('SIGTERM');
+    const parsed = JSON.parse(stdoutData.trim());
+    expect(parsed.result.serverInfo.name).toBe('ebird-mcp');
+    expect(parsed.result.protocolVersion).toBe('2024-11-05');
+  });
 });
