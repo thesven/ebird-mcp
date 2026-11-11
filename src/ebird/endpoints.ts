@@ -22,8 +22,20 @@ const Q = {
   speciesGrouping: () => z.string().trim().min(1),
   back: () => z.coerce.number().int().min(1).max(30).optional(),
   cat: () => z.string().trim().optional(),
-  hotspot: () => z.preprocess((value) => (typeof value === 'string' ? value.toLowerCase() === 'true' : value), z.boolean()).optional(),
-  includeProvisional: () => z.preprocess((value) => (typeof value === 'string' ? value.toLowerCase() === 'true' : value), z.boolean()).optional(),
+  hotspot: () =>
+    z
+      .preprocess(
+        (value) => (typeof value === 'string' ? value.toLowerCase() === 'true' : value),
+        z.boolean(),
+      )
+      .optional(),
+  includeProvisional: () =>
+    z
+      .preprocess(
+        (value) => (typeof value === 'string' ? value.toLowerCase() === 'true' : value),
+        z.boolean(),
+      )
+      .optional(),
   maxResults: () => z.coerce.number().int().positive().max(10000).optional(),
   maxResultsTop: () => z.coerce.number().int().positive().max(200).optional(),
   r: () => z.string().trim().optional(),
@@ -44,13 +56,22 @@ const Q = {
   species: () => z.string().trim().optional(),
   version: () => z.string().trim().optional(),
   groupNameLocale: () => z.string().trim().optional(),
-  regionNameFormat: () => z
-    .enum(['detailed', 'detailednoqual', 'full', 'namequal', 'nameonly', 'revdetailed'])
-    .optional(),
+  regionNameFormat: () =>
+    z
+      .enum(['detailed', 'detailednoqual', 'full', 'namequal', 'nameonly', 'revdetailed'])
+      .optional(),
   delim: () => z.string().trim().optional(),
 };
 
-function tool(name: string, desc: string, pathTemplate: string, requiresApiKey: boolean, pathParams: string[], querySchema: z.ZodRawShape, queryDefaults: Record<string, string | number | boolean> = {}): EndpointDef {
+function tool(
+  name: string,
+  desc: string,
+  pathTemplate: string,
+  requiresApiKey: boolean,
+  pathParams: string[],
+  querySchema: z.ZodRawShape,
+  queryDefaults: Record<string, string | number | boolean> = {},
+): EndpointDef {
   return {
     name,
     title: desc,
@@ -417,15 +438,7 @@ export const ebirdEndpointDefinitions: EndpointDef[] = [
     {},
     {},
   ),
-  tool(
-    'ref_taxonomy_versions',
-    'Taxonomy versions',
-    '/ref/taxonomy/versions',
-    false,
-    [],
-    {},
-    {},
-  ),
+  tool('ref_taxonomy_versions', 'Taxonomy versions', '/ref/taxonomy/versions', false, [], {}, {}),
   tool(
     'ref_sppgroup',
     'Taxonomic groups',

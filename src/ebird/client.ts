@@ -90,7 +90,10 @@ export function buildEndpointUrl(
   };
 }
 
-export async function callEbirdEndpoint(name: string, args: Record<string, unknown>): Promise<unknown> {
+export async function callEbirdEndpoint(
+  name: string,
+  args: Record<string, unknown>,
+): Promise<unknown> {
   const def = endpointByName[name];
   if (!def) {
     throw new Error(`Unknown endpoint: ${name}`);
@@ -116,16 +119,25 @@ export async function callEbirdEndpoint(name: string, args: Record<string, unkno
   const wantsText = normalized.fmt === 'csv';
 
   try {
-    return await requestJson(url, {
-      method: 'GET',
-      headers,
-    }, {
-      responseType: wantsText ? 'text' : 'json',
-    });
+    return await requestJson(
+      url,
+      {
+        method: 'GET',
+        headers,
+      },
+      {
+        responseType: wantsText ? 'text' : 'json',
+      },
+    );
   } catch (error) {
     if (error instanceof EbirdRequestError) {
-      const retryText = error.status === 429 || error.status >= 500 ? ' You may retry this request after a delay.' : '';
-      throw new Error(`eBird API error (${error.status} ${error.statusText}) on ${endpoint}: ${error.body ?? 'No body'}${retryText}`);
+      const retryText =
+        error.status === 429 || error.status >= 500
+          ? ' You may retry this request after a delay.'
+          : '';
+      throw new Error(
+        `eBird API error (${error.status} ${error.statusText}) on ${endpoint}: ${error.body ?? 'No body'}${retryText}`,
+      );
     }
     throw error;
   }

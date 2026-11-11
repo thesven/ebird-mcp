@@ -1,5 +1,5 @@
 name = "ebird-mcp"
-main = "dist/index.js"
+main = "dist/src/index.js"
 compatibility_date = "2025-03-01"
 compatibility_flags = ["nodejs_compat"]
 

@@ -25,6 +25,7 @@ Local-first MCP server for the [eBird v2 API](https://documenter.getpostman.com/
 Tool names are prefixed with `ebird_`, e.g. `ebird_data_obs_recent`.
 
 Authenticated (require `apiKey`) tools:
+
 - `ebird_data_obs_recent`
 - `ebird_data_obs_recent_notable`
 - `ebird_data_obs_recent_species`
@@ -49,6 +50,7 @@ Authenticated (require `apiKey`) tools:
 - `ebird_ref_region_list`
 
 No `apiKey` required:
+
 - `ebird_ref_taxonomy`
 - `ebird_ref_taxonomy_versions`
 - `ebird_ref_sppgroup`

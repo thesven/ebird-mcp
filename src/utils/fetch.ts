@@ -58,12 +58,15 @@ export async function requestJson(
 
     if (!resp.ok) {
       const body = await readResponseBodyText(resp);
-      throw new EbirdRequestError(`eBird API request failed with ${resp.status} ${resp.statusText}`, {
-        status: resp.status,
-        statusText: resp.statusText,
-        endpoint: url,
-        body,
-      });
+      throw new EbirdRequestError(
+        `eBird API request failed with ${resp.status} ${resp.statusText}`,
+        {
+          status: resp.status,
+          statusText: resp.statusText,
+          endpoint: url,
+          body,
+        },
+      );
     }
 
     const bodyText = await resp.text();
