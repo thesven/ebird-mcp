@@ -13,54 +13,184 @@ export interface EndpointDef {
 }
 
 const Q = {
-  regionCode: () => z.string().trim().min(1),
-  speciesCode: () => z.string().trim().min(1),
-  subId: () => z.string().trim().min(1),
-  locId: () => z.string().trim().min(1),
-  parentRegionCode: () => z.string().trim().min(1),
-  regionType: () => z.string().trim().min(1),
-  speciesGrouping: () => z.string().trim().min(1),
-  back: () => z.coerce.number().int().min(1).max(30).optional(),
-  cat: () => z.string().trim().optional(),
+  regionCode: () =>
+    z
+      .string()
+      .trim()
+      .min(1)
+      .describe(
+        'eBird region code: country (e.g. "US", "CR"), subnational1 state/province ("US-NY", "CA-ON"), subnational2 county ("US-NY-061"), or location ID ("L99381")',
+      ),
+  speciesCode: () =>
+    z
+      .string()
+      .trim()
+      .min(1)
+      .describe(
+        '6-letter eBird species code (e.g. "cangoo" for Canada Goose, "baleag" for Bald Eagle). Use ebird_search_species to find codes.',
+      ),
+  subId: () =>
+    z.string().trim().min(1).describe('eBird checklist submission identifier (e.g. "S12345678")'),
+  locId: () =>
+    z.string().trim().min(1).describe('eBird location or hotspot identifier (e.g. "L99381")'),
+  parentRegionCode: () =>
+    z
+      .string()
+      .trim()
+      .min(1)
+      .describe(
+        'Parent region code: "world" for countries, country code (e.g. "US") for states, state code (e.g. "US-NY") for counties',
+      ),
+  regionType: () =>
+    z
+      .string()
+      .trim()
+      .min(1)
+      .describe(
+        'Type of region to list: "country", "subnational1" (states/provinces), or "subnational2" (counties)',
+      ),
+  speciesGrouping: () =>
+    z.string().trim().min(1).describe('Grouping standard for taxonomy (e.g. "ebird", "merlin")'),
+  back: () =>
+    z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(30)
+      .optional()
+      .describe('Number of days back to look for observations (1-30, default 30)'),
+  cat: () =>
+    z
+      .string()
+      .trim()
+      .optional()
+      .describe(
+        'Species category filter: comma-separated list of categories (e.g. "species", "slash", "spuh", "hybrid", "domestic")',
+      ),
   hotspot: () =>
     z
       .preprocess(
         (value) => (typeof value === 'string' ? value.toLowerCase() === 'true' : value),
         z.boolean(),
       )
-      .optional(),
+      .optional()
+      .describe('If true, only fetch observations submitted from official eBird hotspots'),
   includeProvisional: () =>
     z
       .preprocess(
         (value) => (typeof value === 'string' ? value.toLowerCase() === 'true' : value),
         z.boolean(),
       )
-      .optional(),
-  maxResults: () => z.coerce.number().int().positive().max(10000).optional(),
-  maxResultsTop: () => z.coerce.number().int().positive().max(200).optional(),
-  r: () => z.string().trim().optional(),
-  sppLocale: () => z.string().trim().optional(),
-  detail: () => z.enum(['simple', 'full']).optional(),
-  y: () => z.coerce.number().int().min(1900).max(3000).optional(),
-  m: () => z.coerce.number().int().min(1).max(12).optional(),
-  d: () => z.coerce.number().int().min(1).max(31).optional(),
-  lat: () => z.coerce.number().min(-90).max(90).optional(),
-  lng: () => z.coerce.number().min(-180).max(180).optional(),
-  dist: () => z.coerce.number().min(0).max(500).optional(),
-  sort: () => z.enum(['date', 'species']).optional(),
-  rank: () => z.string().trim().optional(),
-  rankedBy: () => z.enum(['spp', 'cnp', 'ob']).optional(),
-  sortKey: () => z.enum(['obs_dt', 'creation_dt']).optional(),
-  fmt: () => z.enum(['json', 'csv']).optional(),
-  locale: () => z.string().trim().optional(),
-  species: () => z.string().trim().optional(),
-  version: () => z.string().trim().optional(),
-  groupNameLocale: () => z.string().trim().optional(),
+      .optional()
+      .describe('If true, include provisional/unreviewed observations'),
+  maxResults: () =>
+    z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(10000)
+      .optional()
+      .describe('Maximum number of results to return (1-10000, default 10)'),
+  maxResultsTop: () =>
+    z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(200)
+      .optional()
+      .describe('Maximum results for top list feeds (1-200, default 100)'),
+  r: () =>
+    z
+      .string()
+      .trim()
+      .optional()
+      .describe(
+        'Up to 10 comma-separated location codes (e.g. "L99381,L99382") to fetch observations from',
+      ),
+  sppLocale: () =>
+    z
+      .string()
+      .trim()
+      .optional()
+      .describe('Locale code for species common names (e.g. "en", "es", "fr", "de", "zh")'),
+  detail: () =>
+    z
+      .enum(['simple', 'full'])
+      .optional()
+      .describe(
+        'Level of observation detail: "simple" for key fields or "full" for complete checklist record',
+      ),
+  y: () =>
+    z.coerce
+      .number()
+      .int()
+      .min(1900)
+      .max(3000)
+      .optional()
+      .describe('Year of observation (e.g. 2026)'),
+  m: () =>
+    z.coerce.number().int().min(1).max(12).optional().describe('Month of observation (1-12)'),
+  d: () => z.coerce.number().int().min(1).max(31).optional().describe('Day of observation (1-31)'),
+  lat: () =>
+    z.coerce
+      .number()
+      .min(-90)
+      .max(90)
+      .optional()
+      .describe('Latitude in decimal degrees (-90 to 90)'),
+  lng: () =>
+    z.coerce
+      .number()
+      .min(-180)
+      .max(180)
+      .optional()
+      .describe('Longitude in decimal degrees (-180 to 180)'),
+  dist: () =>
+    z.coerce
+      .number()
+      .min(0)
+      .max(500)
+      .optional()
+      .describe('Search radius from coordinates in kilometers (0-50 km, max 500 km, default 5 km)'),
+  sort: () =>
+    z
+      .enum(['date', 'species'])
+      .optional()
+      .describe('Sort order: "date" (most recent first) or "species" (taxonomic order)'),
+  rank: () => z.string().trim().optional().describe('Ranking criteria for historic observations'),
+  rankedBy: () =>
+    z
+      .enum(['spp', 'cnp', 'ob'])
+      .optional()
+      .describe(
+        'Ranking criteria: "spp" (species count), "cnp" (complete checklists), or "ob" (species on complete checklists)',
+      ),
+  sortKey: () =>
+    z
+      .enum(['obs_dt', 'creation_dt'])
+      .optional()
+      .describe(
+        'Sort checklists by "obs_dt" (observation date) or "creation_dt" (submission date)',
+      ),
+  fmt: () =>
+    z.enum(['json', 'csv']).optional().describe('Response format: "json" (default) or "csv"'),
+  locale: () =>
+    z.string().trim().optional().describe('Locale for taxonomy common names (default: "en")'),
+  species: () =>
+    z
+      .string()
+      .trim()
+      .optional()
+      .describe('Single species code or comma-separated species codes to filter taxonomy'),
+  version: () => z.string().trim().optional().describe('Specific taxonomy version (e.g. "2026")'),
+  groupNameLocale: () => z.string().trim().optional().describe('Locale for taxonomic group names'),
   regionNameFormat: () =>
     z
       .enum(['detailed', 'detailednoqual', 'full', 'namequal', 'nameonly', 'revdetailed'])
-      .optional(),
-  delim: () => z.string().trim().optional(),
+      .optional()
+      .describe('Format of region name string (e.g. "detailed", "nameonly", "revdetailed")'),
+  delim: () =>
+    z.string().trim().optional().describe('Delimiter character for region name components'),
 };
 
 function tool(

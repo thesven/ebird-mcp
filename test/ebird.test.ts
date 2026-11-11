@@ -101,15 +101,42 @@ describe('client', () => {
     expect(result).toContain('id,name');
   });
 
-  it('requires apiKey for authenticated calls', async () => {
-    await expect(
-      callEbirdEndpoint('product_top100', {
-        regionCode: 'US',
-        y: 2026,
-        m: 8,
-        d: 19,
-      } as any),
-    ).rejects.toBeTruthy();
+  it('requires apiKey for authenticated calls when no env var is set', async () => {
+    const oldKey = process.env.EBIRD_API_KEY;
+    delete process.env.EBIRD_API_KEY;
+    try {
+      await expect(
+        callEbirdEndpoint('product_top100', {
+          regionCode: 'US',
+          y: 2026,
+          m: 8,
+          d: 19,
+        } as any),
+      ).rejects.toThrow(/eBird API key is required/);
+    } finally {
+      if (oldKey) process.env.EBIRD_API_KEY = oldKey;
+    }
+  });
+
+  it('automatically falls back to EBIRD_API_KEY environment variable if apiKey arg is omitted', async () => {
+    const { fn, calls } = makeMockFetch();
+    const oldKey = process.env.EBIRD_API_KEY;
+    process.env.EBIRD_API_KEY = 'env-secret-token';
+    try {
+      await callEbirdEndpoint('data_obs_recent', {
+        regionCode: 'US-NY',
+      });
+      expect(fn).toHaveBeenCalledOnce();
+      expect(calls[0].init.headers).toMatchObject({
+        'x-ebirdapitoken': 'env-secret-token',
+      });
+    } finally {
+      if (oldKey) {
+        process.env.EBIRD_API_KEY = oldKey;
+      } else {
+        delete process.env.EBIRD_API_KEY;
+      }
+    }
   });
 
   it('supports no-auth taxonomy endpoint without apiKey', async () => {

@@ -1,9 +1,16 @@
 {
   "name": "ebird-mcp",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Local-first MCP server for eBird API",
   "type": "module",
+  "bin": {
+    "ebird-mcp": "./bin/ebird-mcp.js"
+  },
+  "files": [
+    "bin",
+    "dist/src"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

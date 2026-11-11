@@ -26,6 +26,16 @@ function toQueryValue(value: unknown): string | undefined {
   return String(value);
 }
 
+export function resolveApiKey(apiKey?: unknown): string | undefined {
+  if (typeof apiKey === 'string' && apiKey.trim().length > 0) {
+    return apiKey.trim();
+  }
+  if (process.env.EBIRD_API_KEY && process.env.EBIRD_API_KEY.trim().length > 0) {
+    return process.env.EBIRD_API_KEY.trim();
+  }
+  return undefined;
+}
+
 function isValidApiKey(apiKey?: string): apiKey is string {
   return typeof apiKey === 'string' && apiKey.trim().length > 0;
 }
@@ -58,8 +68,11 @@ export function buildEndpointUrl(
   const parsed = validateSchema ? (schema.parse(args) as Record<string, unknown>) : args;
   const normalized = applyDefaults(def, parsed);
 
-  if (def.requiresApiKey && !isValidApiKey(normalized.apiKey as string | undefined)) {
-    throw new Error(`apiKey is required for ${name}`);
+  const effectiveApiKey = resolveApiKey(normalized.apiKey);
+  if (def.requiresApiKey && !effectiveApiKey) {
+    throw new Error(
+      `eBird API key is required for ${name}. Provide 'apiKey' in arguments or set the EBIRD_API_KEY environment variable. Request a free key at https://ebird.org/api/keygen`,
+    );
   }
 
   let path = def.pathTemplate;
@@ -107,13 +120,24 @@ export async function callEbirdEndpoint(
     .parse(args) as Record<string, unknown>;
 
   const normalized = applyDefaults(def, parsed);
-  const { url, endpoint } = buildEndpointUrl(name, normalized, false);
+  const effectiveApiKey = resolveApiKey(normalized.apiKey);
+  if (def.requiresApiKey && !effectiveApiKey) {
+    throw new Error(
+      `eBird API key is required for ${name}. Provide 'apiKey' in arguments or set the EBIRD_API_KEY environment variable. Request a free key at https://ebird.org/api/keygen`,
+    );
+  }
+
+  const normalizedWithKey = {
+    ...normalized,
+    ...(effectiveApiKey ? { apiKey: effectiveApiKey } : {}),
+  };
+  const { url, endpoint } = buildEndpointUrl(name, normalizedWithKey, false);
 
   const headers: HeadersInit = {
     'User-Agent': 'ebird-mcp/1.0',
   };
-  if (def.requiresApiKey) {
-    headers['x-ebirdapitoken'] = String(normalized.apiKey);
+  if (def.requiresApiKey && effectiveApiKey) {
+    headers['x-ebirdapitoken'] = effectiveApiKey;
   }
 
   const wantsText = normalized.fmt === 'csv';
