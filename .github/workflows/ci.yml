@@ -19,6 +19,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Build TypeScript distribution
+        run: npm run build
       - name: Code style check
         run: npm run format:check
       - name: Lint check
@@ -27,7 +29,5 @@ jobs:
         run: npm run typecheck
       - name: Test suite with coverage (>90%)
         run: npm run test:coverage
-      - name: Build TypeScript distribution
-        run: npm run build
       - name: Validate npm packaging tarball
         run: npm pack --dry-run

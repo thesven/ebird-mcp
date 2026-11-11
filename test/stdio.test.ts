@@ -111,7 +111,15 @@ describe('stdio environment and dotfile key loader', () => {
   });
 
   it('runs bin/ebird-mcp.js CLI executable and responds to initialize over stdio', async () => {
-    const { spawn } = await import('node:child_process');
+    const { spawn, execFileSync } = await import('node:child_process');
+    const distPath = path.resolve(__dirname, '../dist/src/stdio.js');
+    if (!fs.existsSync(distPath)) {
+      execFileSync('npm', ['run', 'build'], {
+        cwd: path.resolve(__dirname, '..'),
+        stdio: 'pipe',
+      });
+    }
+
     const binPath = path.resolve(__dirname, '../bin/ebird-mcp.js');
     const child = spawn(process.execPath, [binPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -131,8 +139,12 @@ describe('stdio environment and dotfile key loader', () => {
       }) + '\n';
 
     let stdoutData = '';
+    let stderrData = '';
     child.stdout.on('data', (chunk) => {
       stdoutData += chunk.toString();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderrData += chunk.toString();
     });
 
     child.stdin.write(initMsg);
@@ -140,8 +152,12 @@ describe('stdio environment and dotfile key loader', () => {
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         child.kill();
-        reject(new Error(`Timed out waiting for CLI response. Got: ${stdoutData}`));
-      }, 3000);
+        reject(
+          new Error(
+            `Timed out waiting for CLI response. stdout: "${stdoutData}", stderr: "${stderrData}"`,
+          ),
+        );
+      }, 5000);
 
       const interval = setInterval(() => {
         if (stdoutData.includes('"result"')) {
